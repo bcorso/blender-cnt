@@ -258,6 +258,7 @@ class BlenderCNTDialog(bpy.types.Operator):
         bpy.ops.mesh.primitive_uv_sphere_add()
         bpy.ops.object.shade_smooth()
         sphere = bpy.context.object
+        sphere.name = "Atom"
         sphere.scale = (atomR, atomR, atomR)
         sphere.location = (0,0,0)
 
@@ -269,6 +270,8 @@ class BlenderCNTDialog(bpy.types.Operator):
         # Create bezier curve to represent bond
         bpy.ops.curve.primitive_bezier_curve_add()
         curve = bpy.context.object
+        curve.name = "Bonds"
+        curve.data.name = "Bonds"
         curve.data.dimensions = '3D'
         curve.data.fill_mode = 'FULL'
         curve.data.bevel_depth = bondR
