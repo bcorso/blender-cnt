@@ -64,7 +64,7 @@ License
 =======
 
 The script is under GPL 2.0, to comply with Blenders license (https://www.blender.org/support/faq/). 
-The generated images are not under any license; however, they do require an acknowledgement (See the NOTICE file for more details).
+The generated images are not under any license; however, they do require an acknowledgement (See the [NOTICE](https://github.com/bcorso/blender-cnt/edit/master/NOTICE) file for more details).
 
 Support
 =======
