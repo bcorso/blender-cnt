@@ -21,40 +21,50 @@ To use the add-on: In **Object Mode** press the spacebar to bring up the search 
 
 ![Search for Blender-CNT addon](https://raw.githubusercontent.com/wiki/bcorso/blender-cnt/images/find_cnt.png)
 
-By default, this will render a (m=5, n=5) graphene sheet:
+By default, this will render an unwrapped, a.k.a. graphene, (5,5) CNT:
 
 ![Graphene default operator](https://raw.githubusercontent.com/wiki/bcorso/blender-cnt/images/graphene_operator.png)
 
-The **Create CNT** panel includes options to update the object in real-time:
+To transition to a wrapped CNT, slide the wrapping factor from 0 to 1:
 
-* **Type:** (Graphene or CNT)
+![CNT operator](https://raw.githubusercontent.com/wiki/bcorso/blender-cnt/images/semiwrapped_operator.png)
+![CNT operator](https://raw.githubusercontent.com/wiki/bcorso/blender-cnt/images/cnt_operator.png)
+
+The **Create CNT** panel also includes other options that allow you to update the CNT in real-time:
+
+* **wrap:** the wrapping factor of the CNT (0=graphene, 1=CNT)
 * **m:** index of Graphene/CNT cell
 * **n:** index of Graphene/CNT cell
+* **Nx:** count of the x-array modifier
+* **Ny:** count of the y-array modifier
 * **C-C bond length**
 * **C atom radius**
 * **C-C bond radius**
 
-For example, switching the type to **CNT** will immediately render the CNT on the screen.
+## Properties
 
-![CNT operator](https://raw.githubusercontent.com/wiki/bcorso/blender-cnt/images/cnt_operator.png)
+Once the **Create CNT** operator panel closes, you will not be able to reopen the panel for further modification of the CNT. However, most of the properties can be modified in alternative ways.
 
-The previous actions have been applied to a **single (m, n) cell** of the lattice. However, the lattice can be extended to include multiple cells by using an **array modifier**. The array modifiers are automatically setup during creation, and can be changed by going to the **Modifier** tab and increasing the **count**.
+### Array Modifiers
+The **Nx** and **Ny** properties allow the lattice to be extended along the x or y directions using **array modifiers**. Once the operator panel is closed, these properties can be changed by going to the **Modifier** tab and adjusting the **count**.
 
 ![CNT array modifier](https://raw.githubusercontent.com/wiki/bcorso/blender-cnt/images/array.png)
 
-Finally, one has the ability to separately modify the atoms and bonds because they are created as separate objects. As an example, the atoms can be resized by clicking on the **atom** object and modifying the **scale** of the atom in the **Object** tab.
+### Atom Size
+The **C atom radius** property allows the atom to be resized using scaling. Once the operator panel is closed, this property can be changed by clicking on the **atom** object and modifying the **scale** in the **Object** tab.
 
 ![Atom resizing](https://raw.githubusercontent.com/wiki/bcorso/blender-cnt/images/atoms.png)
 
-Likewise, the bonds can be resized by clicking on the **bonds** object and modifying the **depth** parameter in the **Data** tab.
+### Bond Size
+The **C-C bond radius** property allows the bond radius to be resized using the `bezier-curve` depth factor. Once the operator panel is closed, this property can be changed by clicking on the **bonds** object and modifying the **depth** parameter in the **Data** tab.
 
 ![Bond resizing](https://raw.githubusercontent.com/wiki/bcorso/blender-cnt/images/bonds.png)
 
 License
 =======
 
-GPL 2.0 with an acknowledgement required to accompany the images generated.
-See the NOTICE file for more details.
+The script is under GPL 2.0, to comply with Blenders license (https://www.blender.org/support/faq/). 
+The generated images are not under any license; however, they do require an acknowledgement (See the NOTICE file for more details).
 
 Support
 =======
