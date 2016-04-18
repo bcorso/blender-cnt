@@ -27,7 +27,7 @@ derivative work, you must accompany this image with the following acknowledgment
 
 import numpy as np
 from fractions import gcd
-from math import cos, sin, acos, sqrt, copysign, pi
+from math import cos, sin, acos, atan2, sqrt, copysign, pi
 
 class Lattice:
     ''' 
@@ -113,10 +113,10 @@ class LatticeCell:
         indices2D = [(i, j) for (i, j, k) in indices if k == 0]
         bonds = []
         for (i, j) in indices2D:
-            p0 = self.pos(i   , j   , 0)
-            p1 = self.pos(i   , j   , 1)
-            p2 = self.pos(i-1 , j   , 1)
-            p3 = self.pos(i   , j-1 , 1)
+            p0 = self.pos(i  , j  , 0)
+            p1 = self.pos(i  , j  , 1)
+            p2 = self.pos(i-1, j  , 1)
+            p3 = self.pos(i  , j-1, 1)
             
             if self._isBondInCell(p1):
                 bonds.append([p0, p1])
@@ -160,29 +160,44 @@ class Graphene:
     def to3D(self, p):
         return np.array([p[0], p[1], 0])
 
-
 class CNT:
-    ''' Defines the points in a graphene unit cell '''
-    def __init__(self, bL, m, n):
-        self.bL = bL
-        # Unit cell graphene
-        self.graphene = Graphene(bL, m, n)
-        self.cell = self.graphene.cell
+    ''' Defines the points in a CNT wrapped by wrapFactor '''
+    def __init__(self, bL, m, n, wrapFactor):
+        # Create graphene
+        graphene = Graphene(bL, m, n)
+        self.cell = graphene.cell
 
-        # CNT radius
-        self.r = self.cell.magC / (2*pi)
+        # Cell radius
+        self.r = self.cell.magC / (2.0*pi)
 
-        self.atoms = [self.pos3D(p) for p in self.cell.atoms]
-        self.bonds = [(self.pos3D(b[0]), self.pos3D(b[1])) 
-                          for b in self.cell.bonds]
-        self.translation = (0, 0, self.cell.magT)
+        # Cell max radius
+        self.x0 = min(min(p1[0],p2[0]) for p1,p2 in graphene.bonds)
+        self.xf = max(max(p1[0],p2[0]) for p1,p2 in graphene.bonds)
+        self.dr = 1.01*(self.xf - self.x0)/(2.0*pi)
 
-    def pos3D(self, p):
-        ''' return position of CNT index (i, j, k), w.r.t. the graphene lattice. ''' 
-        return np.array([
-            self.r*cos(p[0]/self.r), 
-            self.r*sin(p[0]/self.r), 
-            p[1]])
+        # Calculate atom and bond positions for wrapped CNT
+        wrapFactor = wrapFactor * (self.dr / self.r)
+        self.atoms = [self.wrap(p, wrapFactor) for p in self.cell.atoms]
+        self.bonds = [(self.wrap(b[0], wrapFactor), 
+                       self.wrap(b[1], wrapFactor)) for b in self.cell.bonds]
+
+        self.translation = (self.cell.magC, self.cell.magT, 0)
+
+    def wrap(self, p, wrapFactor):
+        ''' 
+        return position of CNT atom w.r.t. the graphene atom.
+        @param p           : atom position in unwraped graphene
+        @param wrapFactor : frational wrapping factor [0,1]
+        '''
+        x1 = p[0]
+        theta = (x1 - self.x0)/self.dr - pi/2.0
+        r1 = self.r * sqrt(2.0 + 2.0*sin(theta))
+
+        # wrapped polar coordinates
+        r = (r1 - x1)*wrapFactor + x1
+        t = wrapFactor*atan2(1+sin(theta), cos(theta))
+
+        return np.array([r*cos(t), p[1], r*sin(t)])
 
 def mag(v):
     return np.sqrt(v.dot(v))
@@ -217,27 +232,41 @@ class BlenderCNTDialog(bpy.types.Operator):
     
     gtype = bpy.props.EnumProperty(
                 name="Type",
-                items=(('GRAPHENE', "Graphene", ""),
-                    ('CNT', "CNT", ""),),
-                default='GRAPHENE')
-    index_m = bpy.props.IntProperty(name="m", default=5)
-    index_n = bpy.props.IntProperty(name="n", default=5)
-    bL = bpy.props.FloatProperty(name="C-C Bond Length", default=.246)
-    bR = bpy.props.FloatProperty(name="C-C Bond Radius", default=.01)
-    aR = bpy.props.FloatProperty(name="C Atom Radius", default=.04)
+                items=(('CNT', "CNT", ""),),
+                default='CNT')
+    wrap = bpy.props.FloatProperty(name="Wrap factor", default=0, min=0, max=1)
+    index_m = bpy.props.IntProperty(name="m", default=5, min=1)
+    index_n = bpy.props.IntProperty(name="n", default=5, min=1)
+    count_x = bpy.props.IntProperty(name="Nx", default=1, min=1)
+    count_y = bpy.props.IntProperty(name="Ny", default=1, min=1)
+    bL = bpy.props.FloatProperty(name="C-C Bond Length", default=.246, step=.246)
+    bR = bpy.props.FloatProperty(name="C-C Bond Radius", default=.01, step=1)
+    aR = bpy.props.FloatProperty(name="C Atom Radius", default=.04, step=1)
     
     def execute(self, context):
-        gObj = None
-        if self.gtype == 'GRAPHENE':
-            gObj = Graphene(self.bL, self.index_m, self.index_n)
-        else:
-            gObj = CNT(self.bL, self.index_m, self.index_n)
-        
-        self.render(gObj.atoms, gObj.bonds, self.aR, self.bR, gObj.translation)
+        if self.gtype == 'CNT':
+            cnt = CNT(self.bL, self.index_m, self.index_n, self.wrap)
+            count = (self.count_x, self.count_y)
+            self.render(cnt.atoms, cnt.bonds, self.aR, self.bR, cnt.translation, count)
 
         return {'FINISHED'}
 
-    def render(self, atoms, bonds, atomR, bondR, delta):
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.label(text="CNT Properties")
+        col.prop(self, "wrap")
+        row = col.row()
+        row.prop(self, "index_m")
+        row.prop(self, "index_n")
+        row = col.row()
+        row.prop(self, "count_x")
+        row.prop(self, "count_y")
+        col.prop(self, "bL")
+        col.prop(self, "bR")
+        col.prop(self, "aR")
+
+    def render(self, atoms, bonds, atomR, bondR, delta, count):
         import bmesh, bpy_extras
         # Generate mesh point for each atom
         mesh = bpy.data.meshes.new("Atoms")
@@ -250,7 +279,7 @@ class BlenderCNTDialog(bpy.types.Operator):
         bm.to_mesh(mesh) 
         mesh.update()
         bpy_extras.object_utils.object_data_add(bpy.context, mesh)
-        self.addArrayModifier(delta)
+        self.addArrayModifier(delta, count)
         points = bpy.context.object
 
         # Generate sphere to be used as atom
@@ -292,16 +321,16 @@ class BlenderCNTDialog(bpy.types.Operator):
             spline.bezier_points[1].handle_left_type = 'VECTOR'
             spline.bezier_points[1].handle_right_type = 'VECTOR'
 
-        self.addArrayModifier(delta)
+        self.addArrayModifier(delta, count)
 
-    def addArrayModifier(self, delta):
+    def addArrayModifier(self, delta, count):
         ''' Adds an "Array Modifier" to the object by offset "delta" '''
         for (i, d) in enumerate(delta):
             if d > 0:
                 name = 'Array.' + str(i)
                 bpy.ops.object.modifier_add(type='ARRAY')
                 bpy.context.active_object.modifiers['Array'].name = name
-                bpy.context.active_object.modifiers[name].count=1
+                bpy.context.active_object.modifiers[name].count=count[i]
                 bpy.context.active_object.modifiers[name].use_relative_offset=False
                 bpy.context.active_object.modifiers[name].use_constant_offset=True
                 bpy.context.active_object.modifiers[name].constant_offset_displace[i] = d
