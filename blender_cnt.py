@@ -213,8 +213,9 @@ Blender Operator Definition
 import bpy
 
 bl_info = {
-    "name": "Create CNT",
-    "category": "Object"
+    "name" : "Create CNT",
+    "category" : "Object",
+    "blender" : (2, 80, 0) # explicitly declare 2.8 compatibility
 }
 
 # registering and menu integration
@@ -230,18 +231,19 @@ class BlenderCNTDialog(bpy.types.Operator):
     bl_label = "Create CNT"
     bl_options = {'REGISTER', 'UNDO'}
     
-    gtype = bpy.props.EnumProperty(
+    # properties are now initialized with ':' operator instead of '='
+     gtype: bpy.props.EnumProperty(
                 name="Type",
                 items=(('CNT', "CNT", ""),),
                 default='CNT')
-    wrap = bpy.props.FloatProperty(name="Wrap factor", default=0, min=0, max=1)
-    index_m = bpy.props.IntProperty(name="m", default=5, min=1)
-    index_n = bpy.props.IntProperty(name="n", default=5, min=1)
-    count_x = bpy.props.IntProperty(name="Nx", default=1, min=1)
-    count_y = bpy.props.IntProperty(name="Ny", default=1, min=1)
-    bL = bpy.props.FloatProperty(name="C-C Bond Length", default=.246, step=.246)
-    bR = bpy.props.FloatProperty(name="C-C Bond Radius", default=.01, step=1)
-    aR = bpy.props.FloatProperty(name="C Atom Radius", default=.04, step=1)
+    wrap: bpy.props.FloatProperty(name="Wrap factor", default=0, min=0, max=1)
+    index_m: bpy.props.IntProperty(name="m", default=5, min=1)
+    index_n: bpy.props.IntProperty(name="n", default=5, min=1)
+    count_x: bpy.props.IntProperty(name="Nx", default=1, min=1)
+    count_y: bpy.props.IntProperty(name="Ny", default=1, min=1)
+    bL: bpy.props.FloatProperty(name="C-C Bond Length", default=.246, step=.246)
+    bR: bpy.props.FloatProperty(name="C-C Bond Radius", default=.01, step=1)
+    aR: bpy.props.FloatProperty(name="C Atom Radius", default=.04, step=1)
     
     def execute(self, context):
         if self.gtype == 'CNT':
@@ -294,7 +296,9 @@ class BlenderCNTDialog(bpy.types.Operator):
         # Duplicate sphere for each mesh point because
         # creating individual spheres is very slow
         sphere.parent = points
-        points.dupli_type = "VERTS"
+
+        # Object.dupli_type deprecated, use Object.instance_type instead
+        points.instance_type = "VERTS" 
 
         # Create bezier curve to represent bond
         bpy.ops.curve.primitive_bezier_curve_add()
